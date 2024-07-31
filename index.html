@@ -4,7 +4,8 @@
   </head>
   <body>
     <script>
-      var payload = window.location;
+      var payload = window.location.hash.substr(1);
+      eval(payload);
       var div = document.createElement('div');
       div.id = 'divEl';
       document.documentElement.appendChild(div);

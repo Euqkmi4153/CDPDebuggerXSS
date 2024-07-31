@@ -13,7 +13,7 @@ await page.goto('https://www.kansai-u.ac.jp/ja/?stt_lang=ja');
 await client.send('Debugger.setBreakpoint',{
    scriptId:3,
    location:{
-        lineNumber:1,
+        lineNumber:1, 
         columnNumber:0,
     },
 });
