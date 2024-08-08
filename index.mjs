@@ -1,24 +1,81 @@
 import puppeteer from 'puppeteer';
-const browser=await puppeteer.launch({headless:false});
-const page=(await browser.pages())[0];
-const client=await page.createCDPSession();
-await client.send('Debugger.enable');
-// await client.send('DOMDebugger.enable');
-client.on('Debugger.paused',(event)=>{
-    console.log(event.callFrames[0].location);
-    client.send('Debugger.stepInto');
-});
-await client.send('Debugger.pause',({}));
-await page.goto('https://www.kansai-u.ac.jp/ja/?stt_lang=ja');
-await client.send('Debugger.setBreakpoint',{
-   scriptId:3,
-   location:{
-        lineNumber:1, 
-        columnNumber:0,
-    },
-});
-await client.send('DOMDebugger.setDOMbreakpoint',{
-    nodeId:1,
-    type:'subtree-modified',
-});
-await browser.close();
+
+
+  const browser = await puppeteer.launch({ headless: false });
+  const page = (await browser.pages())[0];
+  const client = await page.createCDPSession();
+  await client.send('Debugger.enable');
+  await client.send('Page.enable');
+  await client.send('Debugger.pause',({}));
+  client.on('Page.loadEventFired',async()=>{
+      await browser.close();
+  });
+    // client.on("Runtime.domContentEventFired",async()=>{
+    //     await browser.close();
+    // });
+    
+    
+//     await page.evaluate(()=>{
+//     document.addEventListener('Page.DOMContentLoaded', async () => {
+//         await browser.close(); 
+//       });
+//    });
+
+  await client.send("Page.navigate", {
+    url: "http://localhost:3000/"
+  });
+  let stepIntoPromise = Promise.resolve(); 
+
+  client.on('Debugger.paused', async (event) => {
+    const scriptId = event.callFrames[0].location.scriptId;
+    console.log(scriptId);
+    console.log(1);
+    
+    stepIntoPromise = (async () => {
+      await client.send('Debugger.stepInto');
+    })();
+
+    async function findDangerousSinks(scriptId) {
+      const { scriptSource } = await client.send("Debugger.getScriptSource", { scriptId });
+      const dangerousFunctions = ['eval(', 'new Function(', 'setTimeout(', 'setInterval('];
+      const detectedSinks = [];
+
+      dangerousFunctions.forEach((func) => {
+        let index = 0;
+        
+        while ((index = scriptSource.indexOf(func, index)) !== -1) {
+          const lineNumber = scriptSource.substring(0, index).split('\n').length;
+          detectedSinks.push({
+            function: func,
+            index: index,
+            line: lineNumber
+          });
+          index += func.length;
+        }
+      });
+
+      if (detectedSinks.length > 0) {
+        console.log('Dangerous sinks found:');
+        detectedSinks.forEach((sink) => {
+          console.log(`Function: ${sink.function}, Line: ${sink.line}`);
+        });
+      } else {
+        console.log('No dangerous sinks found.');
+      }
+    }
+
+    await findDangerousSinks(scriptId);
+  });
+
+
+  await stepIntoPromise; 
+
+
+
+
+
+
+
+
+
+
