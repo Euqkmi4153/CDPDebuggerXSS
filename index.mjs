@@ -38,19 +38,33 @@ import puppeteer from 'puppeteer';
                 const scriptId = event.callFrames[0].location.scriptId;
                 console.log(scriptId);
                 const regex1=/eval\(|new Function\(|setTimeout\(|setInterval\(/g;
+                const array=["location.hash","location.href","location.search","document.URL","document.documentURI","document.baseURI"];
+                // const array=/location.hash\(|location.href\(|location.search\(|document.URL\(|document.documentURI\(|document.baseURI\(/g;
+                
                 const getSource=await client.send("Debugger.getScriptSource",{scriptId});
                 let match;
                 let matches=[];
-                while((match=regex1.exec(getSource))!=null){
+                // let Source;
+                // let Sources=[];
+                while((match=regex1.exec(getSource))!==null){
                     matches.push(match[0]);
                 };
+                console.log(matches.includes(hash));
+                // while((Source=array.find(getSource))!==null){
+                //     Sources.push(Source[0]);
+                // }
+                const found=array.includes(getSource);
+                if(found.value==matches.value){
+                    console.log("Coming across from the Source");
+                }else{
+                    console.log("Not coming across from the Source");
+                    }
                 // console.log(match);
                 // const saving=match;
                 // if client.send('Runtime.evaluate',{
-                //     expression:match
-                // })else
+                    //     expression:match
+                    // })else
 
-                console.log(matches.includes(hash));
 
 
 
